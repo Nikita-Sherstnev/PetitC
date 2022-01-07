@@ -5,27 +5,27 @@ from compiler import main
 
 class TestCompiler:
     def test_var_assign(self):
-        program = "{ j=11; }"
+        program = "{ var=11; }"
         res = main(program)
-        assert res == "j=11\n"
+        assert res == "var=11\n"
 
     def test_two_var_assign(self):
         program = "{ j=11; i=8; }"
         res = main(program)
-        assert res == "i=8\nj=11\n"
+        assert res == "j=11\ni=8\n"
 
     def test_unary_minus(self):
         res = main("{ i=-55; }")
         assert res == "i=-55\n"
 
     def test_unary_plus(self):
-        res = main("{ i=+55; }")
-        assert res == "i=55\n"
+        res = main("{ amount=+55; }")
+        assert res == "amount=55\n"
 
     def test_multiple_assign(self):
         program = "a=b=c=2<3;"
         res = main(program)
-        assert res == "a=1\nb=1\nc=1\n"
+        assert res == "c=1\nb=1\na=1\n"
 
     def test_sum(self):
         program = "{ i=2+5; }"
@@ -37,7 +37,12 @@ class TestCompiler:
         res = main(program)
         assert res == "i=-3\n"
     
-    def test_if(self):
+    def test_if_true(self):
+        program = "{ i=7; if (i<6) x=1; }"
+        res = main(program)
+        assert res == "i=7\n"
+
+    def test_if_false(self):
         program = "{ i=7; if (i<6) x=1; }"
         res = main(program)
         assert res == "i=7\n"

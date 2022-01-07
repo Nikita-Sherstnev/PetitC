@@ -14,6 +14,11 @@ def init():
     ch = ''
     ch_index = -1
 
+    global decode_table
+    global term_id
+    term_id = 0
+    decode_table = dict()
+
     global here
     global obj
     obj = [0] * 100
@@ -129,10 +134,7 @@ def next_sym():
                     sym += 1
                 
                 if words[sym] == None:
-                    if len(id_name) == 1:
-                        sym = Lexeme.ID
-                    else:
-                        syntax_error()
+                    sym = Lexeme.ID
 
                 sym = Lexeme(sym)
             else:
@@ -156,6 +158,7 @@ class Rule(Enum):
     SEQ = 11
     EXPR = 12
     PROG = 13
+
 
 class Tree:
     def __init__(self, kind):
@@ -182,9 +185,19 @@ def paren_expr():  # /* <paren_expr> ::= "(" <expr> ")" */
 def term():  # /* <term> ::= <id> | <int> | <paren_expr> */
     global sym
     global ch
-    if sym == Lexeme.ID: 
+    global decode_table
+    global term_id
+    global id_name
+    inv_decode_table = {v: k for k, v in decode_table.items()}
+    if sym == Lexeme.ID:
         x = Tree(Rule.VAR)
-        x.val = ord(id_name[0])-ord('a')
+        if id_name not in inv_decode_table:
+            decode_table[term_id] = id_name
+            id_name = term_id
+            term_id += 1
+        else:
+            id_name = inv_decode_table[id_name]
+        x.val = id_name
         next_sym()
     elif sym == Lexeme.INT:
         x = Tree(Rule.CST)
@@ -308,7 +321,7 @@ class VM(Enum):
 
 def g(code):
     global here
-    obj[here]= code
+    obj[here] = code
     here+=1
 
 def reserve():
@@ -397,7 +410,7 @@ def main(program_txt):
     global program_text
     program_text = program_txt
     global names_table
-    names_table = [0] * 26
+    names_table = dict()
     next_ch()
 
     syntax_tree = program()
@@ -406,10 +419,8 @@ def main(program_txt):
     run()
 
     res = ''
-
-    for i in range(26):
-        if names_table[i] != 0:
-            res += chr(ord('a')+i) + "=" + str(int(names_table[i])) + '\n'
+    for key in names_table.keys():
+        res += decode_table[key] + "=" + str(int(names_table[key])) + '\n'
 
     return res
 
