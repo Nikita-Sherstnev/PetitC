@@ -14,7 +14,7 @@ def init():
     ch = ''
     ch_index = -1
 
-    global decode_table
+    global decode_table # Таблица имен переменных
     global term_id
     term_id = 0
     decode_table = dict()
@@ -36,12 +36,14 @@ class Lexeme(Enum):
     RPAR = 7
     PLUS = 8
     MINUS = 9
-    LESS = 10
-    SEMI = 11
-    EQUAL = 12
-    INT = 13
-    ID = 14
-    EOI = 15
+    MUL = 10
+    DIV = 11
+    LESS = 12
+    SEMI = 13
+    EQUAL = 14
+    INT = 15
+    ID = 16
+    EOI = 17
 
 words = [ "do", "else", "if", "while", None ]
 
@@ -110,6 +112,8 @@ def next_sym():
                 next_ch()
                 sym = Lexeme.MINUS
             break
+        elif ch == '*': next_ch(); sym = Lexeme.MUL; break
+        elif ch == '/': next_ch(); sym = Lexeme.DIV; break
         elif ch == '<': next_ch(); sym = Lexeme.LESS; break
         elif ch == ';': next_ch(); sym = Lexeme.SEMI; break
         elif ch == '=': 
@@ -148,16 +152,18 @@ class Rule(Enum):
     CST = 1
     ADD = 2
     SUB = 3
-    LT = 4
-    SET = 5
-    IF1 = 6
-    IF2 = 7
-    WHILE = 8
-    DO = 9
-    EMPTY = 10
-    SEQ = 11
-    EXPR = 12
-    PROG = 13
+    MUL = 4
+    DIV = 5
+    LT = 6
+    SET = 7
+    IF1 = 8
+    IF2 = 9
+    WHILE = 10
+    DO = 11
+    EMPTY = 12
+    SEQ = 13
+    EXPR = 14
+    PROG = 15
 
 
 class Tree:
@@ -169,7 +175,7 @@ class Tree:
         self.val = None
 
 
-def paren_expr():  # /* <paren_expr> ::= "(" <expr> ")" */
+def paren_expr():  # <paren_expr> ::= "(" <expr> ")"
     if sym == Lexeme.LPAR:
         next_sym()
     else:
@@ -182,7 +188,7 @@ def paren_expr():  # /* <paren_expr> ::= "(" <expr> ")" */
     return x
 
 
-def term():  # /* <term> ::= <id> | <int> | <paren_expr> */
+def term():  # <term> ::= <id> | <int> | <paren_expr>
     global sym
     global ch
     global decode_table
@@ -208,9 +214,15 @@ def term():  # /* <term> ::= <id> | <int> | <paren_expr> */
     return x
 
 
-def sum():  # /* <sum> ::= <term> | <sum> "+" <term> | <sum> "-" <term> */
+def sum():  # <term> | <sum> "+" <term> | <sum> "-" <term> | <sum> "*" <term> | <sum> "/" <term>
     global sym
     x = term()
+    while sym == Lexeme.MUL or sym == Lexeme.DIV:
+        t=x
+        x=Tree(Rule.MUL if sym==Lexeme.MUL else Rule.DIV)
+        next_sym()
+        x.o1=t
+        x.o2=term()
     while sym == Lexeme.PLUS or sym == Lexeme.MINUS:
         t=x
         x=Tree(Rule.ADD if sym==Lexeme.PLUS else Rule.SUB)
@@ -219,7 +231,7 @@ def sum():  # /* <sum> ::= <term> | <sum> "+" <term> | <sum> "-" <term> */
         x.o2=term()
     return x
 
-def test(): # /* <test> ::= <sum> | <sum> "<" <sum> */
+def test(): # <test> ::= <sum> | <sum> "<" <sum>
     global sym
     x = sum()
     if sym == Lexeme.LESS:
@@ -231,7 +243,7 @@ def test(): # /* <test> ::= <sum> | <sum> "<" <sum> */
     return x
 
 
-def expr(): # /* <expr> ::= <test> | <id> "=" <expr> */
+def expr(): # <expr> ::= <test> | <id> "=" <expr>
     global sym
     if sym != Lexeme.ID:
         return test()
@@ -247,21 +259,21 @@ def expr(): # /* <expr> ::= <test> | <id> "=" <expr> */
 
 def statement():
     global sym
-    if sym == Lexeme.IF_SYM:  # "if" <paren_expr> <statement> */
+    if sym == Lexeme.IF_SYM:  # "if" <paren_expr> <statement>
         x = Tree(Rule.IF1)
         next_sym()
         x.o1 = paren_expr()
         x.o2 = statement()
-        if sym == Lexeme.ELSE_SYM: # /* ... "else" <statement> */
+        if sym == Lexeme.ELSE_SYM: # ... "else" <statement>
             x.kind = Rule.IF2
             next_sym()
             x.o3 = statement()
-    elif sym == Lexeme.WHILE_SYM: # /* "while" <paren_expr> <statement> */
+    elif sym == Lexeme.WHILE_SYM: # "while" <paren_expr> <statement>
         x = Tree(Rule.WHILE)
         next_sym()
         x.o1 = paren_expr()
         x.o2 = statement()
-    elif sym == Lexeme.DO_SYM: # /* "do" <statement> "while" <paren_expr> ";" */
+    elif sym == Lexeme.DO_SYM: # "do" <statement> "while" <paren_expr> ";"
         x = Tree(Rule.DO)
         next_sym()
         x.o1 = statement()
@@ -274,9 +286,9 @@ def statement():
             next_sym()
         else:
             syntax_error()
-    elif sym == Lexeme.SEMI: # /* ";" */
+    elif sym == Lexeme.SEMI: # ";"
         x = Tree(Rule.EMPTY); next_sym()
-    elif sym == Lexeme.LBRA: # /* "{" { <statement> } "}" */
+    elif sym == Lexeme.LBRA: # "{" { <statement> } "}"
         x = Tree(Rule.EMPTY)
         next_sym()
         while sym != Lexeme.RBRA:
@@ -285,7 +297,7 @@ def statement():
             x.o1 = t
             x.o2 = statement()
         next_sym()
-    else:  # /* <expr> ";" */
+    else:  # <expr> ";"
         x = Tree(Rule.EXPR)
         x.o1 = expr()
         if sym == Lexeme.SEMI:
@@ -313,11 +325,13 @@ class VM(Enum):
     POP = 3
     ADD = 4
     SUB = 5
-    LT = 6
-    JZ = 7
-    JNZ = 8
-    JMP = 9
-    HALT = 10
+    MUL = 6
+    DIV = 7
+    LT = 8
+    JZ = 9
+    JNZ = 10
+    JMP = 11
+    HALT = 12
 
 def g(code):
     global here
@@ -334,6 +348,8 @@ def comp(x):
     elif x.kind == Rule.CST  : g(VM.PUSH); g(x.val)
     elif x.kind == Rule.ADD  : comp(x.o1); comp(x.o2); g(VM.ADD)
     elif x.kind == Rule.SUB  : comp(x.o1); comp(x.o2); g(VM.SUB)
+    elif x.kind == Rule.MUL  : comp(x.o1); comp(x.o2); g(VM.MUL)
+    elif x.kind == Rule.DIV  : comp(x.o1); comp(x.o2); g(VM.DIV)
     elif x.kind == Rule.LT   : comp(x.o1); comp(x.o2); g(VM.LT)
     elif x.kind == Rule.SET  : comp(x.o2); g(VM.STORE); g(x.o1.val)
     elif x.kind == Rule.IF1  : 
@@ -387,6 +403,8 @@ def run():
         elif obj[pc] == VM.POP  : sp_i-=1
         elif obj[pc] == VM.ADD  : sp[sp_i-2] = sp[sp_i-2] + sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.SUB  : sp[sp_i-2] = sp[sp_i-2] - sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.MUL  : sp[sp_i-2] = sp[sp_i-2] * sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.DIV  : sp[sp_i-2] = sp[sp_i-2] / sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.LT   : sp[sp_i-2] = sp[sp_i-2] < sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.JMP   : pc+=1; pc += obj[pc]-1
         elif obj[pc] == VM.JZ    :

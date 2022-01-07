@@ -37,6 +37,11 @@ class TestCompiler:
         res = main(program)
         assert res == "i=-3\n"
     
+    def test_mult(self):
+        program = "{ i=6*8/3; }"
+        res = main(program)
+        assert res == "i=16\n"
+    
     def test_if_true(self):
         program = "{ i=7; if (i<6) x=1; }"
         res = main(program)
