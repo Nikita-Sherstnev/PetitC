@@ -1,0 +1,26 @@
+<program> ::= <statement>
+<statement> ::= <condit> | <loop> | "{" { <statement> } "}" | <expr> ";" | ";"
+<condit> ::= "if" <paren_expr> <statement> |
+          "if" <paren_expr> <statement> "else" <statement> 
+<loop> ::= "for" <paren_expr> <statement> |
+                    "while" <paren_expr> <statement> |
+                    "do" <statement> "while" <paren_expr> ";"
+<paren_expr> ::= "(" <expr> ")"
+<expr> ::= <test> | <id> "=" <expr>
+<test> ::= <sum> | <sum> <compar> <sum>
+<compar> ::= "==" | "#" | "<" | "<=" | ">" | ">="
+<sum> ::= <term> | <sum> "+" <term> | <sum> "-" <term> | <sum> "*" <term> | <sum> "/" <term>
+<term> ::= <id> | <int> | <paren_expr>
+<id> ::= <letter> { <letter> | <integer> }
+<letter> ::= "a" | "b" | "c" | "d" | ... | "z"
+<int> ::= ["+" | "-" ] <integer>
+
+
+1. Унарный оператор +- +
+2. Операторы сравнения
+3. Операторы умнож/дел
+4. Цикл for
+5. Идентификаторы произвольной длины
+
+
+python -m pytest -s
