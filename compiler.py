@@ -242,7 +242,6 @@ def test(): # <test> ::= <sum> | <sum> "<" <sum>
         x.o2=sum()
     return x
 
-
 def expr(): # <expr> ::= <test> | <id> "=" <expr>
     global sym
     if sym != Lexeme.ID:
@@ -256,19 +255,19 @@ def expr(): # <expr> ::= <test> | <id> "=" <expr>
         x.o2=expr()
     return x
 
-
-def statement():
-    global sym
-    if sym == Lexeme.IF_SYM:  # "if" <paren_expr> <statement>
-        x = Tree(Rule.IF1)
+def condit():
+    x = Tree(Rule.IF1) # "if" <paren_expr> <statement>
+    next_sym()
+    x.o1 = paren_expr()
+    x.o2 = statement()
+    if sym == Lexeme.ELSE_SYM: # ... "else" <statement>
+        x.kind = Rule.IF2
         next_sym()
-        x.o1 = paren_expr()
-        x.o2 = statement()
-        if sym == Lexeme.ELSE_SYM: # ... "else" <statement>
-            x.kind = Rule.IF2
-            next_sym()
-            x.o3 = statement()
-    elif sym == Lexeme.WHILE_SYM: # "while" <paren_expr> <statement>
+        x.o3 = statement()
+    return x
+
+def loop():
+    if sym == Lexeme.WHILE_SYM: # "while" <paren_expr> <statement>
         x = Tree(Rule.WHILE)
         next_sym()
         x.o1 = paren_expr()
@@ -286,8 +285,18 @@ def statement():
             next_sym()
         else:
             syntax_error()
+    
+    return x
+
+def statement():
+    global sym
+    if sym == Lexeme.IF_SYM:  
+        x = condit()
+    elif sym == Lexeme.WHILE_SYM or sym == Lexeme.DO_SYM: 
+        x = loop()
     elif sym == Lexeme.SEMI: # ";"
-        x = Tree(Rule.EMPTY); next_sym()
+        x = Tree(Rule.EMPTY)
+        next_sym()
     elif sym == Lexeme.LBRA: # "{" { <statement> } "}"
         x = Tree(Rule.EMPTY)
         next_sym()
