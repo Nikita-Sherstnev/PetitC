@@ -69,7 +69,8 @@ class TestCompiler:
 
     def test_while_and_if_else(self):
         program = \
-        """{ i=125; j=100; 
+        """{i=125; 
+            j=100; 
             while (i-j) 
             if (i<j) 
                 j=j-i; 
@@ -77,3 +78,8 @@ class TestCompiler:
                 i=i-j; }"""
         res = main(program)
         assert res == "i=25\nj=25\n"
+
+    def test_for_loop(self):
+        program = "{ x=0; for (i=0; i<5; i=i+1) x=x+2; }"
+        res = main(program)
+        assert res == "x=10\ni=5\n"

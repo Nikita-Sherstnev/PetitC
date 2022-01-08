@@ -2,7 +2,7 @@
 <statement> ::= <condit> | <loop> | "{" { <statement> } "}" | <expr> ";" | ";"
 <condit> ::= "if" <paren_expr> <statement> |
           "if" <paren_expr> <statement> "else" <statement> 
-<loop> ::= "for" <paren_expr> <statement> |
+<loop> ::= "for" "(" <expr> ";" <test> ";" <expr> ")" <statement> |
                     "while" <paren_expr> <statement> |
                     "do" <statement> "while" <paren_expr> ";"
 <paren_expr> ::= "(" <expr> ")"
@@ -19,8 +19,9 @@
 1. Унарный оператор +- +
 2. Операторы сравнения
 3. Операторы умнож/дел +
-4. Цикл for
+4. Цикл for +
 5. Идентификаторы произвольной длины +
 
 
 python -m pytest -s
+python -m compiler "{ i=6+6; }"

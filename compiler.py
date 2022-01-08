@@ -7,20 +7,20 @@ from enum import Enum
 
 def init():
     global ch # Текущий символ
-    global ch_index
-    global sym
+    global ch_index # Индекс текущего символа в исходной программе
+    global sym # Текущая лексема
     global int_val
     global id_name
     ch = ''
     ch_index = -1
 
     global decode_table # Таблица имен переменных
-    global term_id
+    global term_id # Переменная для присвоения индексов переменным
     term_id = 0
     decode_table = dict()
 
     global here
-    global obj
+    global obj # Байткод программы
     obj = [0] * 100
     here = 0 # Позиция текущего элемента в байт-коде
 
@@ -30,22 +30,23 @@ class Lexeme(Enum):
     ELSE_SYM = 1
     IF_SYM = 2
     WHILE_SYM = 3
-    LBRA = 4
-    RBRA = 5
-    LPAR = 6
-    RPAR = 7
-    PLUS = 8
-    MINUS = 9
-    MUL = 10
-    DIV = 11
-    LESS = 12
-    SEMI = 13
-    EQUAL = 14
-    INT = 15
-    ID = 16
-    EOI = 17
+    FOR_SYM = 4
+    LBRA = 5
+    RBRA = 6
+    LPAR = 7
+    RPAR = 8
+    PLUS = 9
+    MINUS = 10
+    MUL = 11
+    DIV = 12
+    LESS = 13
+    SEMI = 14
+    EQUAL = 15
+    INT = 16
+    ID = 17
+    EOI = 18
 
-words = [ "do", "else", "if", "while", None ]
+keywords = [ "do", "else", "if", "while", "for", None ] # Order matters!
 
 
 def next_ch():
@@ -71,7 +72,7 @@ def next_sym():
     global ch
     global ch_index
     global sym
-    global words
+    global keywords
     global id_name
     global int_val
     id_name = ''
@@ -134,10 +135,10 @@ def next_sym():
                     next_ch()
                 
                 sym = 0
-                while words[sym] != None and words[sym] != id_name:
+                while keywords[sym] != None and keywords[sym] != id_name:
                     sym += 1
                 
-                if words[sym] == None:
+                if keywords[sym] == None:
                     sym = Lexeme.ID
 
                 sym = Lexeme(sym)
@@ -160,10 +161,11 @@ class Rule(Enum):
     IF2 = 9
     WHILE = 10
     DO = 11
-    EMPTY = 12
-    SEQ = 13
-    EXPR = 14
-    PROG = 15
+    FOR = 12
+    EMPTY = 13
+    SEQ = 14
+    EXPR = 15
+    PROG = 16
 
 
 class Tree:
@@ -172,6 +174,7 @@ class Tree:
         self.o1 = None
         self.o2 = None
         self.o3 = None
+        self.o4 = None
         self.val = None
 
 
@@ -285,14 +288,36 @@ def loop():
             next_sym()
         else:
             syntax_error()
-    
+    elif sym == Lexeme.FOR_SYM: # "for" <for_paren> <statement>
+        x = Tree(Rule.FOR)
+        next_sym()
+        if sym == Lexeme.LPAR:
+            next_sym()
+        else:
+            syntax_error()
+        x.o1 = expr()
+        if sym == Lexeme.SEMI:
+            next_sym()
+        else:
+            syntax_error()
+        x.o2 = test()
+        if sym == Lexeme.SEMI:
+            next_sym()
+        else:
+            syntax_error()
+        x.o3 = expr()
+        if sym == Lexeme.RPAR:
+            next_sym()
+        else:
+            syntax_error()
+        x.o4 = statement()
     return x
 
 def statement():
     global sym
     if sym == Lexeme.IF_SYM:  
         x = condit()
-    elif sym == Lexeme.WHILE_SYM or sym == Lexeme.DO_SYM: 
+    elif sym == Lexeme.WHILE_SYM or sym == Lexeme.DO_SYM or sym == Lexeme.FOR_SYM: 
         x = loop()
     elif sym == Lexeme.SEMI: # ";"
         x = Tree(Rule.EMPTY)
@@ -393,6 +418,17 @@ def comp(x):
         g(VM.JNZ)
         p2 = reserve()
         obj[p2] = p1 - p2
+    elif x.kind == Rule.FOR:
+        comp(x.o1)
+        p1=here
+        comp(x.o2)
+        g(VM.JZ)
+        p2=reserve()
+        comp(x.o3)
+        comp(x.o4)
+        g(VM.JMP)
+        obj[here] = p1 - here
+        obj[p2] = reserve() - p2
     elif x.kind == Rule.EMPTY: pass
     elif x.kind == Rule.SEQ  : comp(x.o1); comp(x.o2)
     elif x.kind == Rule.EXPR : comp(x.o1); g(VM.POP)
