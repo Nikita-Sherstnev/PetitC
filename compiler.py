@@ -155,7 +155,7 @@ def next_sym():
                     next_ch()
                 sym = Lexeme.INT
             elif ch.isalpha():
-                while ch.isalpha() or ch == '_':
+                while ch.isalpha() or ch == '_' or ch.isdigit():
                     id_name += ch
                     next_ch()
                 

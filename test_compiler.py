@@ -1,13 +1,11 @@
-import pytest
-
 from compiler import main
 
 
 class TestCompiler:
     def test_var_assign(self):
-        program = "{ var=11; }"
+        program = "{ var_12=11; }"
         res = main(program)
-        assert res == "var=11\n"
+        assert res == "var_12=11\n"
 
     def test_two_var_assign(self):
         program = "{ j=11; i=8; }"
