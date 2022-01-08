@@ -39,12 +39,17 @@ class Lexeme(Enum):
     MINUS = 10
     MUL = 11
     DIV = 12
-    LESS = 13
-    SEMI = 14
-    EQUAL = 15
-    INT = 16
-    ID = 17
-    EOI = 18
+    LT = 13
+    GT = 14
+    LE = 15
+    GE = 16
+    EQ = 17
+    NE = 18
+    SEMI = 19
+    EQUAL = 20
+    INT = 21
+    ID = 22
+    EOI = 23
 
 keywords = [ "do", "else", "if", "while", "for", None ] # Order matters!
 
@@ -115,12 +120,32 @@ def next_sym():
             break
         elif ch == '*': next_ch(); sym = Lexeme.MUL; break
         elif ch == '/': next_ch(); sym = Lexeme.DIV; break
-        elif ch == '<': next_ch(); sym = Lexeme.LESS; break
-        elif ch == ';': next_ch(); sym = Lexeme.SEMI; break
-        elif ch == '=': 
+        elif ch == '<':
             next_ch()
-            sym = Lexeme.EQUAL
+            if ch == '=':
+                sym = Lexeme.LE
+                next_ch()
+            else:
+                sym = Lexeme.LT
             break
+        elif ch == '>':
+            next_ch()
+            if ch == '=':
+                sym = Lexeme.GE
+                next_ch()
+            else:
+                sym = Lexeme.GT
+            break
+        elif ch == '#': next_ch(); sym = Lexeme.NE; break
+        elif ch == '=':
+            next_ch()
+            if ch == '=':
+                sym = Lexeme.EQ
+                next_ch()
+            else:
+                sym = Lexeme.EQUAL
+            break
+        elif ch == ';': next_ch(); sym = Lexeme.SEMI; break
         else:
             if ch.isdigit():
                 int_val = 0
@@ -156,16 +181,21 @@ class Rule(Enum):
     MUL = 4
     DIV = 5
     LT = 6
-    SET = 7
-    IF1 = 8
-    IF2 = 9
-    WHILE = 10
-    DO = 11
-    FOR = 12
-    EMPTY = 13
-    SEQ = 14
-    EXPR = 15
-    PROG = 16
+    GT = 7
+    LE = 8
+    GE = 9
+    EQ = 10
+    NE = 11
+    SET = 12
+    IF1 = 13
+    IF2 = 14
+    WHILE = 15
+    DO = 16
+    FOR = 17
+    EMPTY = 18
+    SEQ = 19
+    EXPR = 20
+    PROG = 21
 
 
 class Tree:
@@ -234,12 +264,42 @@ def sum():  # <term> | <sum> "+" <term> | <sum> "-" <term> | <sum> "*" <term> | 
         x.o2=term()
     return x
 
-def test(): # <test> ::= <sum> | <sum> "<" <sum>
+def test(): # <test> ::= <sum> | <sum> <compar> <sum>
     global sym
     x = sum()
-    if sym == Lexeme.LESS:
+    if sym == Lexeme.LT:
         t=x
         x=Tree(Rule.LT)
+        next_sym()
+        x.o1=t
+        x.o2=sum()
+    elif sym == Lexeme.GT:
+        t=x
+        x=Tree(Rule.GT)
+        next_sym()
+        x.o1=t
+        x.o2=sum()
+    elif sym == Lexeme.LE:
+        t=x
+        x=Tree(Rule.LE)
+        next_sym()
+        x.o1=t
+        x.o2=sum()
+    elif sym == Lexeme.GE:
+        t=x
+        x=Tree(Rule.GE)
+        next_sym()
+        x.o1=t
+        x.o2=sum()
+    elif sym == Lexeme.EQ:
+        t=x
+        x=Tree(Rule.EQ)
+        next_sym()
+        x.o1=t
+        x.o2=sum()
+    elif sym == Lexeme.NE:
+        t=x
+        x=Tree(Rule.NE)
         next_sym()
         x.o1=t
         x.o2=sum()
@@ -362,10 +422,15 @@ class VM(Enum):
     MUL = 6
     DIV = 7
     LT = 8
-    JZ = 9
-    JNZ = 10
-    JMP = 11
-    HALT = 12
+    GT = 9
+    LE = 10
+    GE = 11
+    EQ = 12
+    NE = 13
+    JZ = 14
+    JNZ = 15
+    JMP = 16
+    HALT = 17
 
 def g(code):
     global here
@@ -385,6 +450,11 @@ def comp(x):
     elif x.kind == Rule.MUL  : comp(x.o1); comp(x.o2); g(VM.MUL)
     elif x.kind == Rule.DIV  : comp(x.o1); comp(x.o2); g(VM.DIV)
     elif x.kind == Rule.LT   : comp(x.o1); comp(x.o2); g(VM.LT)
+    elif x.kind == Rule.GT   : comp(x.o1); comp(x.o2); g(VM.GT)
+    elif x.kind == Rule.LE   : comp(x.o1); comp(x.o2); g(VM.LE)
+    elif x.kind == Rule.GE   : comp(x.o1); comp(x.o2); g(VM.GE)
+    elif x.kind == Rule.EQ   : comp(x.o1); comp(x.o2); g(VM.EQ)
+    elif x.kind == Rule.NE   : comp(x.o1); comp(x.o2); g(VM.NE)
     elif x.kind == Rule.SET  : comp(x.o2); g(VM.STORE); g(x.o1.val)
     elif x.kind == Rule.IF1  : 
         comp(x.o1)
@@ -442,15 +512,20 @@ def run():
     sp_i = 0
     pc = 0
     while obj[pc] != VM.HALT:
-        if obj[pc] == VM.FETCH  : pc += 1; sp[sp_i] = names_table[obj[pc]]; sp_i+=1 
+        if obj[pc] == VM.FETCH  : pc += 1; sp[sp_i] = names_table[obj[pc]]; sp_i+=1
         elif obj[pc] == VM.STORE: pc+=1; names_table[obj[pc]] = sp[sp_i-1]
-        elif obj[pc] == VM.PUSH : pc+=1; sp[sp_i] = obj[pc]; sp_i+=1                         
+        elif obj[pc] == VM.PUSH : pc+=1; sp[sp_i] = obj[pc]; sp_i+=1
         elif obj[pc] == VM.POP  : sp_i-=1
         elif obj[pc] == VM.ADD  : sp[sp_i-2] = sp[sp_i-2] + sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.SUB  : sp[sp_i-2] = sp[sp_i-2] - sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.MUL  : sp[sp_i-2] = sp[sp_i-2] * sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.DIV  : sp[sp_i-2] = sp[sp_i-2] / sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.LT   : sp[sp_i-2] = sp[sp_i-2] < sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.GT   : sp[sp_i-2] = sp[sp_i-2] > sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.LE   : sp[sp_i-2] = sp[sp_i-2] <= sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.GE   : sp[sp_i-2] = sp[sp_i-2] >= sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.EQ   : sp[sp_i-2] = sp[sp_i-2] == sp[sp_i-1]; sp_i-=1
+        elif obj[pc] == VM.NE   : sp[sp_i-2] = sp[sp_i-2] != sp[sp_i-1]; sp_i-=1
         elif obj[pc] == VM.JMP   : pc+=1; pc += obj[pc]-1
         elif obj[pc] == VM.JZ    :
             if sp[sp_i-1] == 0:

@@ -83,3 +83,33 @@ class TestCompiler:
         program = "{ x=0; for (i=0; i<5; i=i+1) x=x+2; }"
         res = main(program)
         assert res == "x=10\ni=5\n"
+
+    def test_gt_compar(self):
+        program = "{ i=10; while (i>5) i=i-1; }"
+        res = main(program)
+        assert res == "i=5\n"
+
+    def test_ge_compar(self):
+        program = "{ i=10; do i=i-1; while (i>=5); }"
+        res = main(program)
+        assert res == "i=4\n"
+
+    def test_lt_compar(self):
+        program = "{ i=0; while (i<5) i=i+1; }"
+        res = main(program)
+        assert res == "i=5\n"
+
+    def test_le_compar(self):
+        program = "{ i=0; do i=i+1; while (i<=5); }"
+        res = main(program)
+        assert res == "i=6\n"
+
+    def test_eq_compar(self):
+        program = "{ i=5; if (i==5) x=2; }"
+        res = main(program)
+        assert res == "i=5\nx=2\n"
+
+    def test_ne_compar(self):
+        program = "{ i=10; while (i#5) i=i-1; }"
+        res = main(program)
+        assert res == "i=5\n"
