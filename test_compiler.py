@@ -67,13 +67,17 @@ class TestCompiler:
 
     def test_while_and_if_else(self):
         program = \
-        """{i=125; 
+        """
+        {
+            i=125; 
             j=100; 
             while (i-j) 
             if (i<j) 
                 j=j-i; 
             else 
-                i=i-j; }"""
+                i=i-j;
+        }
+        """
         res = main(program)
         assert res == "i=25\nj=25\n"
 

@@ -207,6 +207,21 @@ class Tree:
         self.o4 = None
         self.val = None
 
+    def __str__(self, level=0):
+        if self.val is None:
+            self.val = ""
+        ret = "\t"*level+repr(self.kind)+' '+str(self.val)+"\n"
+        if self.o1 is not None:
+            ret += self.o1.__str__(level+1)
+        if self.o2 is not None:
+            ret += self.o2.__str__(level+1)
+        if self.o3 is not None:
+            ret += self.o3.__str__(level+1)
+        return ret
+
+    def __repr__(self):
+        return '<tree node representation>'
+
 
 def paren_expr():  # <paren_expr> ::= "(" <expr> ")"
     if sym == Lexeme.LPAR:
