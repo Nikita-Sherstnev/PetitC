@@ -1,9 +1,6 @@
 import sys
-import traceback
 from enum import Enum
 
-
-# Lexical analyzer
 
 def init():
     global ch # Текущий символ
@@ -24,6 +21,8 @@ def init():
     obj = [0] * 100
     here = 0 # Позиция текущего элемента в байт-коде
 
+
+# Lexical analyzer
 
 class Lexeme(Enum):
     DO_SYM = 0
@@ -70,7 +69,6 @@ def prev_ch():
     
 def syntax_error():
     print(f"Syntax error at symbol {ch_index}\n")
-    # traceback.print_stack()
     sys.exit()
 
 def next_sym():
